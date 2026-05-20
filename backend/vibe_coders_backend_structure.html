@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Structure of Backend src/ · VibeShipping</title>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,300;0,500;1,300&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #f6f4ef;
+    --panel-bg: #ffffff;
+    --ink:      #1a1917;
+    --ink-2:    #3d3b37;
+    --ink-3:    #908d86;
+    --border:   #e4e0d8;
+
+    /* folder colour palette — one per category */
+    --c-config:      #64748b; /* slate */
+    --c-controllers: #2563eb; /* blue */
+    --c-models:      #0891b2; /* cyan */
+    --c-routes:      #0d9488; /* teal */
+    --c-middleware:  #9333ea; /* purple */
+    --c-services:    #059669; /* emerald */
+    --c-utils:       #16a34a; /* green */
+    --c-validators:  #db2777; /* pink */
+    --c-uploads:     #d97706; /* amber */
+    --c-root:        #475569; /* slate-dark */
+
+    --tree-line:    #d6d2ca;
+  }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 52px 24px 72px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    isolation: isolate;
+    overflow-x: clip;
+  }
+
+  /* doodle layer */
+  .doodle-layer {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none; overflow: hidden;
+  }
+  .doodle {
+    position: absolute; opacity: 0.42;
+    max-width: clamp(56px, 12vw, 132px);
+    width: auto; height: auto;
+    filter: saturate(0.84);
+    --d-rot: 0deg; --d-scale: 1;
+    transform: rotate(var(--d-rot)) scale(var(--d-scale));
+    animation: ddrift 25s ease-in-out infinite;
+  }
+  .doodle:nth-child(2){animation-duration:20s;animation-delay:-6s}
+  .doodle:nth-child(3){animation-duration:29s;animation-delay:-13s}
+  .doodle:nth-child(4){animation-duration:18s;animation-delay:-3s}
+  .doodle:nth-child(5){animation-duration:32s;animation-delay:-17s}
+  .doodle:nth-child(6){animation-duration:22s;animation-delay:-9s}
+  @keyframes ddrift {
+    0%,100%{transform:rotate(var(--d-rot)) translate(0,0)}
+    40%{transform:rotate(var(--d-rot)) translate(7px,-9px)}
+    70%{transform:rotate(var(--d-rot)) translate(-5px,7px)}
+  }
+  @media(prefers-reduced-motion:reduce){.doodle{animation:none}}
+  .da{top:3%;  left:max(10px,1.1vw);  --d-rot:-12deg; --d-scale:.9}
+  .db{top:22%; left:max(18px,2.6vw);  --d-rot: 9deg;  --d-scale:.83}
+  .dc{top:42%; left:max(8px,.9vw);    --d-rot:-8deg;  --d-scale:.92}
+  .dd{top:62%; left:max(20px,3.2vw);  --d-rot: 11deg; --d-scale:.82}
+  .de{top:82%; left:max(10px,1.2vw);  --d-rot:-7deg;  --d-scale:.9}
+  .df{top:7%;  right:max(10px,1.1vw); --d-rot: 10deg; --d-scale:.9}
+  .dg{top:27%; right:max(22px,3.3vw); --d-rot:-8deg;  --d-scale:.82}
+  .dh{top:47%; right:max(10px,1.2vw); --d-rot: 9deg;  --d-scale:.92}
+  .di{top:67%; right:max(24px,3.6vw); --d-rot:-10deg; --d-scale:.82}
+  .dj{top:87%; right:max(10px,1.1vw); --d-rot: 7deg;  --d-scale:.9}
+  @media(max-width:520px){
+    .doodle{opacity:.32;max-width:clamp(38px,16vw,72px)}
+    .dd,.de,.di,.dj{display:none}
+  }
+
+  .page { width:100%; max-width:840px; position:relative; z-index:1; }
+
+  /* ── Header ── */
+  header { text-align:center; margin-bottom:44px; }
+  .series-tag {
+    display:inline-flex; align-items:center; gap:10px;
+    font-size:10.5px; font-weight:500; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--ink-3); margin-bottom:18px;
+  }
+  .series-tag::before,.series-tag::after {
+    content:''; width:22px; height:1px;
+    background:currentColor; opacity:.45;
+  }
+  h1 {
+    font-family:'Bitter',Georgia,serif;
+    font-size:clamp(26px,4vw,38px);
+    font-weight:300; line-height:1.2;
+    letter-spacing:-.02em; color:var(--ink);
+    margin-bottom:10px;
+  }
+  h1 code {
+    font-family:'JetBrains Mono',monospace;
+    font-size:.88em; font-style:normal; font-weight:500;
+    color:#059669; background:#ecfdf5;
+    padding:2px 8px; border-radius:6px;
+    border:1px solid #a7f3d0;
+  }
+  .header-sub {
+    font-size:14px; color:var(--ink-3); font-weight:300;
+    max-width:500px; margin:0 auto; line-height:1.65;
+  }
+
+  /* ── Main layout: tree + legend ── */
+  .main-grid {
+    display:grid;
+    grid-template-columns:1fr 260px;
+    gap:16px;
+    align-items:start;
+  }
+  @media(max-width:680px){
+    .main-grid { grid-template-columns:1fr; }
+  }
+
+  /* ── Tree panel ── */
+  .tree-panel {
+    background:var(--panel-bg);
+    border:1.5px solid var(--border);
+    border-radius:20px;
+    overflow:hidden;
+  }
+  .tree-titlebar {
+    background:#f0ede6;
+    border-bottom:1.5px solid var(--border);
+    padding:12px 18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .traffic-lights { display:flex; gap:6px; }
+  .tl {
+    width:11px; height:11px; border-radius:50%;
+  }
+  .tl-r { background:#ff5f56; }
+  .tl-y { background:#ffbd2e; }
+  .tl-g { background:#27c93f; }
+  .titlebar-label {
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px; color:var(--ink-3);
+    letter-spacing:.02em; margin-left:4px;
+  }
+
+  .tree-body {
+    padding:20px 22px 24px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    line-height:1;
+  }
+
+  /* ── Tree nodes ── */
+  .tree-root {
+    list-style:none;
+  }
+  .tree-root, .subtree {
+    padding-left:0;
+    list-style:none;
+  }
+  .subtree { padding-left:20px; }
+
+  .node {
+    position:relative;
+    margin:0;
+  }
+
+  .node-row {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:3.5px 6px;
+    border-radius:7px;
+    cursor:default;
+    transition:background .15s;
+    white-space:nowrap;
+  }
+  .node-row:hover { background:rgba(0,0,0,.04); }
+
+  .node-row::before {
+    content:'';
+    display:none;
+  }
+
+  /* tree structure characters */
+  .connector {
+    color:var(--tree-line);
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    user-select:none;
+    flex-shrink:0;
+  }
+
+  /* folder / file icons */
+  .icon {
+    width:16px; height:16px;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ico-folder::before {
+    content:'';
+    display:block;
+    width:15px; height:11px;
+    border-radius:0 3px 3px 3px;
+    background:currentColor;
+    opacity:.85;
+    clip-path:polygon(0 20%, 30% 20%, 38% 0%, 100% 0%, 100% 100%, 0 100%);
+  }
+  .ico-file::before {
+    content:'';
+    display:block;
+    width:12px; height:15px;
+    background:currentColor; opacity:.7;
+    border-radius:1px 4px 2px 2px;
+    clip-path:polygon(0 0, 65% 0, 100% 30%, 100% 100%, 0 100%);
+  }
+
+  /* node label */
+  .node-name {
+    font-size:13px;
+    font-weight:400;
+  }
+  .node-name.is-folder { font-weight:500; }
+  .node-name.is-optional {
+    opacity:.6;
+    font-style:italic;
+  }
+
+  /* ext badge */
+  .ext {
+    font-size:10px; padding:1px 5px;
+    border-radius:4px; font-weight:500;
+    flex-shrink:0; opacity:.8;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  /* root-level files */
+  .root-files-row {
+    margin-top:6px;
+    padding-top:6px;
+    border-top:1px dashed var(--border);
+  }
+
+  /* ── Accordion toggle ── */
+  .node-row.is-toggleable { cursor:pointer; user-select:none; }
+  .node-row.is-toggleable:hover { background:rgba(0,0,0,.05); }
+
+  .toggle-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:18px; height:18px; border-radius:5px;
+    background:rgba(0,0,0,.06); border:1px solid rgba(0,0,0,.09);
+    font-size:13px; line-height:1; font-family:'JetBrains Mono',monospace;
+    color:var(--ink-3); flex-shrink:0;
+    transition:background .15s, color .15s, transform .15s;
+    margin-right:2px;
+  }
+  .node-row.is-toggleable:hover .toggle-btn {
+    background:rgba(0,0,0,.1); color:var(--ink);
+  }
+  .node-row.is-open .toggle-btn {
+    background:rgba(0,0,0,.1);
+    transform:rotate(0deg);
+  }
+
+  /* subtree accordion */
+  .subtree.collapsible {
+    overflow:hidden;
+    max-height:0;
+    transition:max-height .35s cubic-bezier(.4,0,.2,1), opacity .25s ease;
+    opacity:0;
+  }
+  .subtree.collapsible.is-open {
+    max-height:2000px;
+    opacity:1;
+  }
+
+  /* colour helpers applied per folder */
+  .col-config      { color: var(--c-config); }
+  .col-controllers { color: var(--c-controllers); }
+  .col-models      { color: var(--c-models); }
+  .col-routes      { color: var(--c-routes); }
+  .col-middleware  { color: var(--c-middleware); }
+  .col-services    { color: var(--c-services); }
+  .col-utils       { color: var(--c-utils); }
+  .col-validators  { color: var(--c-validators); }
+  .col-uploads     { color: var(--c-uploads); }
+  .col-root        { color: var(--c-root); }
+
+  /* ext badge backgrounds */
+  .ext-js   { background:#fefce8; color:#a16207; }
+  .ext-env  { background:#f0fdf4; color:#15803d; }
+  .ext-json { background:#eff6ff; color:#1d4ed8; }
+  .ext-md   { background:#fdf4ff; color:#7e22ce; }
+
+  /* ── Legend panel ── */
+  .legend-panel {
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .legend-title {
+    font-size:10.5px; font-weight:500; letter-spacing:.15em;
+    text-transform:uppercase; color:var(--ink-3);
+    padding-bottom:8px;
+    border-bottom:1px solid var(--border);
+  }
+
+  .legend-item {
+    background:var(--panel-bg);
+    border:1.5px solid var(--border);
+    border-radius:14px;
+    padding:12px 14px;
+    transition:transform .15s, box-shadow .15s;
+    cursor:default;
+  }
+  .legend-item:hover {
+    transform:translateX(3px);
+    box-shadow:0 6px 20px rgba(0,0,0,.07);
+  }
+  .legend-item-top {
+    display:flex; align-items:center; gap:8px; margin-bottom:5px;
+  }
+  .legend-dot {
+    width:9px; height:9px; border-radius:3px; flex-shrink:0;
+  }
+  .legend-folder {
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px; font-weight:500;
+  }
+  .legend-desc {
+    font-size:12px; font-weight:300;
+    color:var(--ink-3); line-height:1.5;
+  }
+
+  /* ── Callout ── */
+  .callout {
+    margin-top:16px;
+    background:linear-gradient(135deg,#111009 0%,#1e1d19 100%);
+    border-radius:20px; padding:32px 40px;
+    text-align:center; position:relative; overflow:hidden;
+  }
+  .callout::before {
+    content:''; position:absolute;
+    top:-60px; right:-50px; width:180px; height:180px;
+    border-radius:50%; background:rgba(5,150,105,.12);
+  }
+  .callout::after {
+    content:''; position:absolute;
+    bottom:-40px; left:-40px; width:150px; height:150px;
+    border-radius:50%; background:rgba(147,51,234,.08);
+  }
+  .callout-eye {
+    font-size:10px; font-weight:500; letter-spacing:.18em;
+    text-transform:uppercase; color:rgba(255,255,255,.28);
+    margin-bottom:14px;
+  }
+  .callout-quote {
+    font-family:'Bitter',serif; font-style:italic; font-weight:300;
+    font-size:clamp(17px,3vw,23px); line-height:1.4;
+    color:#fff; position:relative; z-index:1;
+  }
+  .callout-quote span { color:#6ee7b7; font-weight:500; }
+  .callout-sub {
+    font-size:12.5px; color:rgba(255,255,255,.34);
+    margin-top:12px; position:relative; z-index:1;
+  }
+
+  footer {
+    text-align:center; margin-top:32px;
+    font-size:10.5px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-3);
+  }
+</style>
+</head>
+<body>
+
+<!-- No doodle images — use CSS-only geometric doodles so it works standalone -->
+<div class="doodle-layer" aria-hidden="true"></div>
+
+<div class="page">
+
+  <header>
+    <div class="series-tag">VibeShipping — Build it. Structure it. Ship it.</div>
+    <h1>Structure of Backend <code>src/</code></h1>
+    <p class="header-sub">A clean, scalable folder architecture for vibe coders who want their Node.js + Express API organised before it turns into spaghetti.</p>
+  </header>
+
+  <div class="main-grid">
+
+    <!-- ── Tree panel ── -->
+    <div class="tree-panel">
+      <div class="tree-titlebar">
+        <div class="traffic-lights">
+          <div class="tl tl-r"></div>
+          <div class="tl tl-y"></div>
+          <div class="tl tl-g"></div>
+        </div>
+        <span class="titlebar-label">backend/</span>
+      </div>
+      <div class="tree-body">
+        <ul class="tree-root">
+
+          <!-- src/ wrapper -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-src">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-root"></span>
+              <span class="node-name is-folder col-root">src/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-src">
+
+              <!-- config -->
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-config">
+                  <span class="connector">├─</span>
+                  <span class="toggle-btn">+</span>
+                  <span class="icon ico-folder col-config"></span>
+                  <span class="node-name is-folder col-config">config/</span>
+                </div>
+                <ul class="subtree collapsible" id="sub-config">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-config"></span><span class="node-name col-config">db</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-config"></span><span class="node-name col-config">dotenv</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-config"></span><span class="node-name col-config">corsConfig</span><span class="ext ext-js">.js</span></div></li>
+                </ul>
+              </li>
+
+              <!-- controllers -->
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-controllers">
+                  <span class="connector">├─</span>
+                  <span class="toggle-btn">+</span>
+                  <span class="icon ico-folder col-controllers"></span>
+                  <span class="node-name is-folder col-controllers">controllers/</span>
+                </div>
+                <ul class="subtree collapsible" id="sub-controllers">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-controllers"></span><span class="node-name col-controllers">authController</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-controllers"></span><span class="node-name col-controllers">userController</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-controllers"></span><span class="node-name col-controllers">productController</span><span class="ext ext-js">.js</span></div></li>
+                </ul>
+              </li>
+
+              <!-- models -->
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-models">
+                  <span class="connector">├─</span>
+                  <span class="toggle-btn">+</span>
+                  <span class="icon ico-folder col-models"></span>
+                  <span class="node-name is-folder col-models">models/</span>
+                </div>
+                <ul class="subtree collapsible" id="sub-models">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-models"></span><span class="node-name col-models">User</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-models"></span><span class="node-name col-models">Product</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-models"></span><span class="node-name col-models">Order</span><span class="ext ext-js">.js</span></div></li>
+                </ul>
+              </li>
+
+              <!-- routes -->
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-routes">
+                  <span class="connector">├─</span>
+                  <span class="toggle-btn">+</span>
+                  <span class="icon ico-folder col-routes"></span>
+                  <span class="node-name is-folder col-routes">routes/</span>
+                </div>
+                <ul class="subtree collapsible" id="sub-routes">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-routes"></span><span class="node-name col-routes">authRoutes</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-routes"></span><span class="node-name col-routes">userRoutes</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-routes"></span><span class="node-name col-routes">productRoutes</span><span class="ext ext-js">.js</span></div></li>
+                </ul>
+              </li>
+
+              <!-- middleware -->
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-middleware">
+                  <span class="connector">├─</span>
+                  <span class="toggle-btn">+</span>
+                  <span class="icon ico-folder col-middleware"></span>
+                  <span class="node-name is-folder col-middleware">middleware/</span>
+                </div>
+                <ul class="subtree collapsible" id="sub-middleware">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-middleware"></span><span class="node-name col-middleware">authMiddleware</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-middleware"></span><span class="node-name col-middleware">errorMiddleware</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-middleware"></span><span class="node-name col-middleware">uploadMiddleware</span><span class="ext ext-js">.js</span></div></li>
+                </ul>
+              </li>
+
+              <!-- services -->
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-services">
+                  <span class="connector">├─</span>
+                  <span class="toggle-btn">+</span>
+                  <span class="icon ico-folder col-services"></span>
+                  <span class="node-name is-folder col-services">services/</span>
+                </div>
+                <ul class="subtree collapsible" id="sub-services">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-services"></span><span class="node-name col-services">authService</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-services"></span><span class="node-name col-services">emailService</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-services"></span><span class="node-name col-services">paymentService</span><span class="ext ext-js">.js</span></div></li>
+                </ul>
+              </li>
+
+              <!-- utils -->
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-utils">
+                  <span class="connector">├─</span>
+                  <span class="toggle-btn">+</span>
+                  <span class="icon ico-folder col-utils"></span>
+                  <span class="node-name is-folder col-utils">utils/</span>
+                </div>
+                <ul class="subtree collapsible" id="sub-utils">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-utils"></span><span class="node-name col-utils">generateToken</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-utils"></span><span class="node-name col-utils">asyncHandler</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-utils"></span><span class="node-name col-utils">validators</span><span class="ext ext-js">.js</span></div></li>
+                </ul>
+              </li>
+
+              <!-- validators -->
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-validators">
+                  <span class="connector">├─</span>
+                  <span class="toggle-btn">+</span>
+                  <span class="icon ico-folder col-validators"></span>
+                  <span class="node-name is-folder col-validators">validators/</span>
+                </div>
+                <ul class="subtree collapsible" id="sub-validators">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-validators"></span><span class="node-name col-validators">authValidator</span><span class="ext ext-js">.js</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-validators"></span><span class="node-name col-validators">userValidator</span><span class="ext ext-js">.js</span></div></li>
+                </ul>
+              </li>
+
+              <!-- uploads -->
+              <li class="node">
+                <div class="node-row"><span class="connector">├─</span><span class="icon ico-folder col-uploads"></span><span class="node-name is-folder col-uploads">uploads/</span><span style="font-size:10px;color:var(--ink-3);margin-left:6px;font-family:'JetBrains Mono',monospace">files go here</span></div>
+              </li>
+
+              <!-- root files inside src -->
+              <li class="node root-files-row">
+                <div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-root"></span><span class="node-name col-root">app</span><span class="ext ext-js">.js</span></div>
+              </li>
+              <li class="node">
+                <div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-root"></span><span class="node-name col-root">server</span><span class="ext ext-js">.js</span></div>
+              </li>
+
+            </ul>
+          </li>
+
+          <!-- root project files -->
+          <li class="node root-files-row">
+            <div class="node-row"><span class="icon ico-file col-root"></span><span class="node-name col-root">.env</span></div>
+          </li>
+          <li class="node">
+            <div class="node-row"><span class="icon ico-file col-root"></span><span class="node-name col-root">package</span><span class="ext ext-json">.json</span></div>
+          </li>
+          <li class="node">
+            <div class="node-row"><span class="icon ico-file col-root"></span><span class="node-name col-root">README</span><span class="ext ext-md">.md</span></div>
+          </li>
+
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── Legend panel ── -->
+    <div class="legend-panel">
+      <div class="legend-title">Folder guide</div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-config)"></div>
+          <span class="legend-folder" style="color:var(--c-config)">config/</span>
+        </div>
+        <div class="legend-desc">DB connection, env loading, and CORS setup. Boot-time wiring, nothing else.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-controllers)"></div>
+          <span class="legend-folder" style="color:var(--c-controllers)">controllers/</span>
+        </div>
+        <div class="legend-desc">Handle <span style="color:var(--c-controllers)">req → res</span>. Call services, return JSON. No raw DB queries here.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-models)"></div>
+          <span class="legend-folder" style="color:var(--c-models)">models/</span>
+        </div>
+        <div class="legend-desc">MongoDB/Mongoose schemas. Shape of your data. One file per collection.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-routes)"></div>
+          <span class="legend-folder" style="color:var(--c-routes)">routes/</span>
+        </div>
+        <div class="legend-desc">API endpoints — map HTTP verbs to controller functions. Thin wiring only.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-middleware)"></div>
+          <span class="legend-folder" style="color:var(--c-middleware)">middleware/</span>
+        </div>
+        <div class="legend-desc">Auth guards, global error handler, Multer file upload — runs between route and controller.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-services)"></div>
+          <span class="legend-folder" style="color:var(--c-services)">services/</span>
+        </div>
+        <div class="legend-desc">Business logic and third-party integrations (email, payments). Keep controllers thin by putting the heavy work here.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-utils)"></div>
+          <span class="legend-folder" style="color:var(--c-utils)">utils/</span>
+        </div>
+        <div class="legend-desc">Pure helper functions — JWT generator, async wrapper, reusable validators. No side effects.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-validators)"></div>
+          <span class="legend-folder" style="color:var(--c-validators)">validators/</span>
+        </div>
+        <div class="legend-desc">Request body validation schemas (Joi / express-validator). Reject bad data before it hits the controller.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-uploads)"></div>
+          <span class="legend-folder" style="color:var(--c-uploads)">uploads/</span>
+        </div>
+        <div class="legend-desc">Landing zone for user-uploaded files and images. Add to <code style="font-size:11px">.gitignore</code> — never commit binaries.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Callout -->
+  <div class="callout">
+    <div class="callout-eye">The rule of thumb</div>
+    <div class="callout-quote">"Controllers <span>orchestrate</span>, services <span>think</span>, models <span>remember</span>."</div>
+    <div class="callout-sub">Keep each layer dumb about the others — your future self will thank you at 3 am.</div>
+  </div>
+
+  <footer>VibeShipping with YG</footer>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var rootRows   = document.querySelectorAll('.node-row.is-toggleable:not(.is-nested)');
+  var nestedRows = document.querySelectorAll('.node-row.is-toggleable.is-nested');
+
+  function closeAllRoot() {
+    rootRows.forEach(function(row) {
+      var sub = document.getElementById(row.getAttribute('data-target'));
+      if (sub) sub.classList.remove('is-open');
+      row.classList.remove('is-open');
+      var btn = row.querySelector('.toggle-btn');
+      if (btn) btn.textContent = '+';
+      nestedRows.forEach(function(nr) {
+        var nsub = document.getElementById(nr.getAttribute('data-target'));
+        if (nsub) nsub.classList.remove('is-open');
+        nr.classList.remove('is-open');
+        var nb = nr.querySelector('.toggle-btn');
+        if (nb) nb.textContent = '+';
+      });
+    });
+  }
+
+  // Root-level: accordion (one open at a time)
+  rootRows.forEach(function(row) {
+    row.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var sub = document.getElementById(row.getAttribute('data-target'));
+      var isOpen = sub && sub.classList.contains('is-open');
+      closeAllRoot();
+      if (!isOpen && sub) {
+        sub.classList.add('is-open');
+        row.classList.add('is-open');
+        var btn = row.querySelector('.toggle-btn');
+        if (btn) btn.textContent = '−';
+      }
+    });
+  });
+
+  // Nested-level: independent toggle
+  nestedRows.forEach(function(row) {
+    row.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var sub = document.getElementById(row.getAttribute('data-target'));
+      if (!sub) return;
+      var isOpen = sub.classList.contains('is-open');
+      sub.classList.toggle('is-open', !isOpen);
+      row.classList.toggle('is-open', !isOpen);
+      var btn = row.querySelector('.toggle-btn');
+      if (btn) btn.textContent = isOpen ? '+' : '−';
+    });
+  });
+});
+</script>
+</body>
+</html>

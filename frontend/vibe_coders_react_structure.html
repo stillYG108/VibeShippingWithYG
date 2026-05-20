@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Structure of React src/ · VibeShipping</title>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,300;0,500;1,300&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #f6f4ef;
+    --panel-bg: #ffffff;
+    --ink:      #1a1917;
+    --ink-2:    #3d3b37;
+    --ink-3:    #908d86;
+    --border:   #e4e0d8;
+
+    /* folder colour palette — one per category */
+    --c-assets:     #d97706; /* amber */
+    --c-components: #2563eb; /* blue */
+    --c-common:     #3b82f6;
+    --c-layout:     #6366f1; /* indigo */
+    --c-ui:         #8b5cf6; /* violet */
+    --c-pages:      #0891b2; /* cyan */
+    --c-routes:     #0d9488; /* teal */
+    --c-services:   #059669; /* emerald */
+    --c-hooks:      #ca8a04; /* yellow */
+    --c-context:    #db2777; /* pink */
+    --c-redux:      #9333ea; /* purple */
+    --c-utils:      #16a34a; /* green */
+    --c-styles:     #e11d48; /* rose */
+    --c-config:     #64748b; /* slate */
+    --c-root:       #475569; /* slate-dark */
+
+    --tree-line:    #d6d2ca;
+  }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 52px 24px 72px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    isolation: isolate;
+    overflow-x: clip;
+  }
+
+  /* doodle layer */
+  .doodle-layer {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none; overflow: hidden;
+  }
+  .doodle {
+    position: absolute; opacity: 0.42;
+    max-width: clamp(56px, 12vw, 132px);
+    width: auto; height: auto;
+    filter: saturate(0.84);
+    --d-rot: 0deg; --d-scale: 1;
+    transform: rotate(var(--d-rot)) scale(var(--d-scale));
+    animation: ddrift 25s ease-in-out infinite;
+  }
+  .doodle:nth-child(2){animation-duration:20s;animation-delay:-6s}
+  .doodle:nth-child(3){animation-duration:29s;animation-delay:-13s}
+  .doodle:nth-child(4){animation-duration:18s;animation-delay:-3s}
+  .doodle:nth-child(5){animation-duration:32s;animation-delay:-17s}
+  .doodle:nth-child(6){animation-duration:22s;animation-delay:-9s}
+  @keyframes ddrift {
+    0%,100%{transform:rotate(var(--d-rot)) translate(0,0)}
+    40%{transform:rotate(var(--d-rot)) translate(7px,-9px)}
+    70%{transform:rotate(var(--d-rot)) translate(-5px,7px)}
+  }
+  @media(prefers-reduced-motion:reduce){.doodle{animation:none}}
+  .da{top:3%;  left:max(10px,1.1vw);  --d-rot:-12deg; --d-scale:.9}
+  .db{top:22%; left:max(18px,2.6vw);  --d-rot: 9deg;  --d-scale:.83}
+  .dc{top:42%; left:max(8px,.9vw);    --d-rot:-8deg;  --d-scale:.92}
+  .dd{top:62%; left:max(20px,3.2vw);  --d-rot: 11deg; --d-scale:.82}
+  .de{top:82%; left:max(10px,1.2vw);  --d-rot:-7deg;  --d-scale:.9}
+  .df{top:7%;  right:max(10px,1.1vw); --d-rot: 10deg; --d-scale:.9}
+  .dg{top:27%; right:max(22px,3.3vw); --d-rot:-8deg;  --d-scale:.82}
+  .dh{top:47%; right:max(10px,1.2vw); --d-rot: 9deg;  --d-scale:.92}
+  .di{top:67%; right:max(24px,3.6vw); --d-rot:-10deg; --d-scale:.82}
+  .dj{top:87%; right:max(10px,1.1vw); --d-rot: 7deg;  --d-scale:.9}
+  @media(max-width:520px){
+    .doodle{opacity:.32;max-width:clamp(38px,16vw,72px)}
+    .dd,.de,.di,.dj{display:none}
+  }
+
+  .page { width:100%; max-width:840px; position:relative; z-index:1; }
+
+  /* ── Header ── */
+  header { text-align:center; margin-bottom:44px; }
+  .series-tag {
+    display:inline-flex; align-items:center; gap:10px;
+    font-size:10.5px; font-weight:500; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--ink-3); margin-bottom:18px;
+  }
+  .series-tag::before,.series-tag::after {
+    content:''; width:22px; height:1px;
+    background:currentColor; opacity:.45;
+  }
+  h1 {
+    font-family:'Bitter',Georgia,serif;
+    font-size:clamp(26px,4vw,38px);
+    font-weight:300; line-height:1.2;
+    letter-spacing:-.02em; color:var(--ink);
+    margin-bottom:10px;
+  }
+  h1 code {
+    font-family:'JetBrains Mono',monospace;
+    font-size:.88em; font-style:normal; font-weight:500;
+    color:#2563eb; background:#eff6ff;
+    padding:2px 8px; border-radius:6px;
+    border:1px solid #bfdbfe;
+  }
+  .header-sub {
+    font-size:14px; color:var(--ink-3); font-weight:300;
+    max-width:500px; margin:0 auto; line-height:1.65;
+  }
+
+  /* ── Main layout: tree + legend ── */
+  .main-grid {
+    display:grid;
+    grid-template-columns:1fr 260px;
+    gap:16px;
+    align-items:start;
+  }
+  @media(max-width:680px){
+    .main-grid { grid-template-columns:1fr; }
+  }
+
+  /* ── Tree panel ── */
+  .tree-panel {
+    background:var(--panel-bg);
+    border:1.5px solid var(--border);
+    border-radius:20px;
+    overflow:hidden;
+  }
+  .tree-titlebar {
+    background:#f0ede6;
+    border-bottom:1.5px solid var(--border);
+    padding:12px 18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .traffic-lights { display:flex; gap:6px; }
+  .tl {
+    width:11px; height:11px; border-radius:50%;
+  }
+  .tl-r { background:#ff5f56; }
+  .tl-y { background:#ffbd2e; }
+  .tl-g { background:#27c93f; }
+  .titlebar-label {
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px; color:var(--ink-3);
+    letter-spacing:.02em; margin-left:4px;
+  }
+
+  .tree-body {
+    padding:20px 22px 24px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    line-height:1;
+  }
+
+  /* ── Tree nodes ── */
+  .tree-root {
+    list-style:none;
+  }
+  .tree-root, .subtree {
+    padding-left:0;
+    list-style:none;
+  }
+  .subtree { padding-left:20px; }
+
+  .node {
+    position:relative;
+    margin:0;
+  }
+
+  .node-row {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:3.5px 6px;
+    border-radius:7px;
+    cursor:default;
+    transition:background .15s;
+    white-space:nowrap;
+  }
+  .node-row:hover { background:rgba(0,0,0,.04); }
+
+  /* connector lines */
+  .node-row::before {
+    content:'';
+    display:none;
+  }
+
+  /* tree structure characters */
+  .connector {
+    color:var(--tree-line);
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    user-select:none;
+    flex-shrink:0;
+  }
+
+  /* folder / file icons */
+  .icon {
+    width:16px; height:16px;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  /* folder icon via SVG inline */
+  .ico-folder::before {
+    content:'';
+    display:block;
+    width:15px; height:11px;
+    border-radius:0 3px 3px 3px;
+    background:currentColor;
+    opacity:.85;
+    clip-path:polygon(0 20%, 30% 20%, 38% 0%, 100% 0%, 100% 100%, 0 100%);
+  }
+  .ico-file::before {
+    content:'';
+    display:block;
+    width:12px; height:15px;
+    background:currentColor; opacity:.7;
+    border-radius:1px 4px 2px 2px;
+    clip-path:polygon(0 0, 65% 0, 100% 30%, 100% 100%, 0 100%);
+  }
+
+  /* node label */
+  .node-name {
+    font-size:13px;
+    font-weight:400;
+  }
+  .node-name.is-folder { font-weight:500; }
+  .node-name.is-optional {
+    opacity:.6;
+    font-style:italic;
+  }
+
+  /* ext badge */
+  .ext {
+    font-size:10px; padding:1px 5px;
+    border-radius:4px; font-weight:500;
+    flex-shrink:0; opacity:.8;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  /* root-level files */
+  .root-files-row {
+    margin-top:6px;
+    padding-top:6px;
+    border-top:1px dashed var(--border);
+  }
+
+  /* ── Accordion toggle ── */
+  .node-row.is-toggleable { cursor:pointer; user-select:none; }
+  .node-row.is-toggleable:hover { background:rgba(0,0,0,.05); }
+
+  .toggle-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:18px; height:18px; border-radius:5px;
+    background:rgba(0,0,0,.06); border:1px solid rgba(0,0,0,.09);
+    font-size:13px; line-height:1; font-family:'JetBrains Mono',monospace;
+    color:var(--ink-3); flex-shrink:0;
+    transition:background .15s, color .15s, transform .15s;
+    margin-right:2px;
+  }
+  .node-row.is-toggleable:hover .toggle-btn {
+    background:rgba(0,0,0,.1); color:var(--ink);
+  }
+  .node-row.is-open .toggle-btn {
+    background:rgba(0,0,0,.1);
+    transform:rotate(0deg);
+  }
+
+  /* subtree accordion */
+  .subtree.collapsible {
+    overflow:hidden;
+    max-height:0;
+    transition:max-height .35s cubic-bezier(.4,0,.2,1), opacity .25s ease;
+    opacity:0;
+  }
+  .subtree.collapsible.is-open {
+    max-height:2000px;
+    opacity:1;
+  }
+
+  /* colour helpers applied per folder */
+  .col-assets    { color: var(--c-assets); }
+  .col-components{ color: var(--c-components); }
+  .col-common    { color: var(--c-common); }
+  .col-layout    { color: var(--c-layout); }
+  .col-ui        { color: var(--c-ui); }
+  .col-pages     { color: var(--c-pages); }
+  .col-routes    { color: var(--c-routes); }
+  .col-services  { color: var(--c-services); }
+  .col-hooks     { color: var(--c-hooks); }
+  .col-context   { color: var(--c-context); }
+  .col-redux     { color: var(--c-redux); }
+  .col-utils     { color: var(--c-utils); }
+  .col-styles    { color: var(--c-styles); }
+  .col-config    { color: var(--c-config); }
+  .col-root      { color: var(--c-root); }
+
+  /* ext badge backgrounds */
+  .ext-jsx  { background:#eff6ff; color:#2563eb; }
+  .ext-js   { background:#fefce8; color:#a16207; }
+  .ext-css  { background:#fff1f2; color:#be123c; }
+
+  /* ── Legend panel ── */
+  .legend-panel {
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .legend-title {
+    font-size:10.5px; font-weight:500; letter-spacing:.15em;
+    text-transform:uppercase; color:var(--ink-3);
+    padding-bottom:8px;
+    border-bottom:1px solid var(--border);
+  }
+
+  .legend-item {
+    background:var(--panel-bg);
+    border:1.5px solid var(--border);
+    border-radius:14px;
+    padding:12px 14px;
+    transition:transform .15s, box-shadow .15s;
+    cursor:default;
+  }
+  .legend-item:hover {
+    transform:translateX(3px);
+    box-shadow:0 6px 20px rgba(0,0,0,.07);
+  }
+  .legend-item-top {
+    display:flex; align-items:center; gap:8px; margin-bottom:5px;
+  }
+  .legend-dot {
+    width:9px; height:9px; border-radius:3px; flex-shrink:0;
+  }
+  .legend-folder {
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px; font-weight:500;
+  }
+  .legend-desc {
+    font-size:12px; font-weight:300;
+    color:var(--ink-3); line-height:1.5;
+  }
+
+  /* ── Callout ── */
+  .callout {
+    margin-top:16px;
+    background:linear-gradient(135deg,#111009 0%,#1e1d19 100%);
+    border-radius:20px; padding:32px 40px;
+    text-align:center; position:relative; overflow:hidden;
+  }
+  .callout::before {
+    content:''; position:absolute;
+    top:-60px; right:-50px; width:180px; height:180px;
+    border-radius:50%; background:rgba(37,99,235,.1);
+  }
+  .callout::after {
+    content:''; position:absolute;
+    bottom:-40px; left:-40px; width:150px; height:150px;
+    border-radius:50%; background:rgba(201,122,16,.08);
+  }
+  .callout-eye {
+    font-size:10px; font-weight:500; letter-spacing:.18em;
+    text-transform:uppercase; color:rgba(255,255,255,.28);
+    margin-bottom:14px;
+  }
+  .callout-quote {
+    font-family:'Bitter',serif; font-style:italic; font-weight:300;
+    font-size:clamp(17px,3vw,23px); line-height:1.4;
+    color:#fff; position:relative; z-index:1;
+  }
+  .callout-quote span { color:#93c5fd; font-weight:500; }
+  .callout-sub {
+    font-size:12.5px; color:rgba(255,255,255,.34);
+    margin-top:12px; position:relative; z-index:1;
+  }
+
+  footer {
+    text-align:center; margin-top:32px;
+    font-size:10.5px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-3);
+  }
+</style>
+</head>
+<body>
+
+<div class="doodle-layer" aria-hidden="true">
+  <img src="art (01).png" alt="" class="doodle da">
+  <img src="art (2).png"  alt="" class="doodle db">
+  <img src="art (3).png"  alt="" class="doodle dc">
+  <img src="art (4).png"  alt="" class="doodle dd">
+  <img src="art (5).png"  alt="" class="doodle de">
+  <img src="art (6).png"  alt="" class="doodle df">
+  <img src="art (7).png"  alt="" class="doodle dg">
+  <img src="art (8).png"  alt="" class="doodle dh">
+  <img src="art (9).png"  alt="" class="doodle di">
+  <img src="art (10).png" alt="" class="doodle dj">
+</div>
+
+<div class="page">
+
+  <header>
+    <div class="series-tag">VibeShipping — Build it. Structure it. Ship it.</div>
+    <h1>Structure of React <code>src/</code></h1>
+    <p class="header-sub">A clean, scalable folder architecture for vibe coders who want to stay organised as the project grows.</p>
+  </header>
+
+  <div class="main-grid">
+
+    <!-- ── Tree panel ── -->
+    <div class="tree-panel">
+      <div class="tree-titlebar">
+        <div class="traffic-lights">
+          <div class="tl tl-r"></div>
+          <div class="tl tl-y"></div>
+          <div class="tl tl-g"></div>
+        </div>
+        <span class="titlebar-label">src/</span>
+      </div>
+      <div class="tree-body">
+        <ul class="tree-root">
+
+          <!-- assets -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-assets">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-assets"></span>
+              <span class="node-name is-folder col-assets">assets/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-assets">
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-folder col-assets"></span><span class="node-name col-assets">images/</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-folder col-assets"></span><span class="node-name col-assets">icons/</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-folder col-assets"></span><span class="node-name col-assets">fonts/</span></div></li>
+            </ul>
+          </li>
+
+          <!-- components -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-components">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-components"></span>
+              <span class="node-name is-folder col-components">components/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-components">
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-common"><span class="connector">├─</span><span class="toggle-btn">+</span><span class="icon ico-folder col-common"></span><span class="node-name is-folder col-common">common/</span></div>
+                <ul class="subtree collapsible" id="sub-common">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-common"></span><span class="node-name col-common">Button</span><span class="ext ext-jsx">.jsx</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-common"></span><span class="node-name col-common">Input</span><span class="ext ext-jsx">.jsx</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-common"></span><span class="node-name col-common">Modal</span><span class="ext ext-jsx">.jsx</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-common"></span><span class="node-name col-common">Loader</span><span class="ext ext-jsx">.jsx</span></div></li>
+                </ul>
+              </li>
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-layout"><span class="connector">├─</span><span class="toggle-btn">+</span><span class="icon ico-folder col-layout"></span><span class="node-name is-folder col-layout">layout/</span></div>
+                <ul class="subtree collapsible" id="sub-layout">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-layout"></span><span class="node-name col-layout">Navbar</span><span class="ext ext-jsx">.jsx</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-layout"></span><span class="node-name col-layout">Sidebar</span><span class="ext ext-jsx">.jsx</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-layout"></span><span class="node-name col-layout">Footer</span><span class="ext ext-jsx">.jsx</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-layout"></span><span class="node-name col-layout">Layout</span><span class="ext ext-jsx">.jsx</span></div></li>
+                </ul>
+              </li>
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-ui"><span class="connector">└─</span><span class="toggle-btn">+</span><span class="icon ico-folder col-ui"></span><span class="node-name is-folder col-ui">ui/</span></div>
+                <ul class="subtree collapsible" id="sub-ui">
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-ui"></span><span class="node-name col-ui">Card</span><span class="ext ext-jsx">.jsx</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-ui"></span><span class="node-name col-ui">Table</span><span class="ext ext-jsx">.jsx</span></div></li>
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-ui"></span><span class="node-name col-ui">Badge</span><span class="ext ext-jsx">.jsx</span></div></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+
+          <!-- pages -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-pages">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-pages"></span>
+              <span class="node-name is-folder col-pages">pages/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-pages">
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-pages"></span><span class="node-name col-pages">Home</span><span class="ext ext-jsx">.jsx</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-pages"></span><span class="node-name col-pages">Login</span><span class="ext ext-jsx">.jsx</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-pages"></span><span class="node-name col-pages">Register</span><span class="ext ext-jsx">.jsx</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-pages"></span><span class="node-name col-pages">Dashboard</span><span class="ext ext-jsx">.jsx</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-pages"></span><span class="node-name col-pages">Profile</span><span class="ext ext-jsx">.jsx</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-pages"></span><span class="node-name col-pages">NotFound</span><span class="ext ext-jsx">.jsx</span></div></li>
+            </ul>
+          </li>
+
+          <!-- routes -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-routes">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-routes"></span>
+              <span class="node-name is-folder col-routes">routes/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-routes">
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-routes"></span><span class="node-name col-routes">AppRoutes</span><span class="ext ext-jsx">.jsx</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-routes"></span><span class="node-name col-routes">ProtectedRoute</span><span class="ext ext-jsx">.jsx</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-routes"></span><span class="node-name col-routes">AdminRoute</span><span class="ext ext-jsx">.jsx</span></div></li>
+            </ul>
+          </li>
+
+          <!-- services -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-services">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-services"></span>
+              <span class="node-name is-folder col-services">services/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-services">
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-services"></span><span class="node-name col-services">api</span><span class="ext ext-js">.js</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-services"></span><span class="node-name col-services">authService</span><span class="ext ext-js">.js</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-services"></span><span class="node-name col-services">userService</span><span class="ext ext-js">.js</span></div></li>
+            </ul>
+          </li>
+
+          <!-- hooks -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-hooks">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-hooks"></span>
+              <span class="node-name is-folder col-hooks">hooks/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-hooks">
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-hooks"></span><span class="node-name col-hooks">useAuth</span><span class="ext ext-js">.js</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-hooks"></span><span class="node-name col-hooks">useFetch</span><span class="ext ext-js">.js</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-hooks"></span><span class="node-name col-hooks">useDebounce</span><span class="ext ext-js">.js</span></div></li>
+            </ul>
+          </li>
+
+          <!-- context -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-context">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-context"></span>
+              <span class="node-name is-folder col-context">context/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-context">
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-context"></span><span class="node-name col-context">AuthContext</span><span class="ext ext-jsx">.jsx</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-context"></span><span class="node-name col-context">ThemeContext</span><span class="ext ext-jsx">.jsx</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-context"></span><span class="node-name col-context">UserContext</span><span class="ext ext-jsx">.jsx</span></div></li>
+            </ul>
+          </li>
+
+          <!-- redux (optional) -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-redux">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-redux"></span>
+              <span class="node-name is-folder col-redux is-optional">redux/</span><span style="font-size:10px;color:var(--ink-3);margin-left:6px;font-family:'JetBrains Mono',monospace">optional</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-redux">
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-redux"></span><span class="node-name col-redux is-optional">store</span><span class="ext ext-js">.js</span></div></li>
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-slices"><span class="connector">├─</span><span class="toggle-btn">+</span><span class="icon ico-folder col-redux"></span><span class="node-name col-redux is-optional">slices/</span></div>
+                <ul class="subtree collapsible" id="sub-slices">
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-redux"></span><span class="node-name col-redux is-optional">authSlice</span><span class="ext ext-js">.js</span></div></li>
+                </ul>
+              </li>
+              <li class="node">
+                <div class="node-row is-toggleable is-nested" data-target="sub-actions"><span class="connector">└─</span><span class="toggle-btn">+</span><span class="icon ico-folder col-redux"></span><span class="node-name col-redux is-optional">actions/</span></div>
+                <ul class="subtree collapsible" id="sub-actions">
+                  <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-redux"></span><span class="node-name col-redux is-optional">userActions</span><span class="ext ext-js">.js</span></div></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+
+          <!-- utils -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-utils">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-utils"></span>
+              <span class="node-name is-folder col-utils">utils/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-utils">
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-utils"></span><span class="node-name col-utils">helpers</span><span class="ext ext-js">.js</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-utils"></span><span class="node-name col-utils">constants</span><span class="ext ext-js">.js</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-utils"></span><span class="node-name col-utils">validators</span><span class="ext ext-js">.js</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-utils"></span><span class="node-name col-utils">formatters</span><span class="ext ext-js">.js</span></div></li>
+            </ul>
+          </li>
+
+          <!-- styles -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-styles">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-styles"></span>
+              <span class="node-name is-folder col-styles">styles/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-styles">
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-styles"></span><span class="node-name col-styles">global</span><span class="ext ext-css">.css</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-styles"></span><span class="node-name col-styles">variables</span><span class="ext ext-css">.css</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-styles"></span><span class="node-name col-styles">theme</span><span class="ext ext-css">.css</span></div></li>
+            </ul>
+          </li>
+
+          <!-- config -->
+          <li class="node">
+            <div class="node-row is-toggleable" data-target="sub-config">
+              <span class="toggle-btn">+</span>
+              <span class="icon ico-folder col-config"></span>
+              <span class="node-name is-folder col-config">config/</span>
+            </div>
+            <ul class="subtree collapsible" id="sub-config">
+              <li class="node"><div class="node-row"><span class="connector">├─</span><span class="icon ico-file col-config"></span><span class="node-name col-config">env</span><span class="ext ext-js">.js</span></div></li>
+              <li class="node"><div class="node-row"><span class="connector">└─</span><span class="icon ico-file col-config"></span><span class="node-name col-config">axiosConfig</span><span class="ext ext-js">.js</span></div></li>
+            </ul>
+          </li>
+
+          <!-- root files -->
+          <li class="node root-files-row">
+            <div class="node-row"><span class="icon ico-file col-root"></span><span class="node-name col-root">App</span><span class="ext ext-jsx">.jsx</span></div>
+          </li>
+          <li class="node">
+            <div class="node-row"><span class="icon ico-file col-root"></span><span class="node-name col-root">main</span><span class="ext ext-jsx">.jsx</span></div>
+          </li>
+          <li class="node">
+            <div class="node-row"><span class="icon ico-file col-styles"></span><span class="node-name col-styles">index</span><span class="ext ext-css">.css</span></div>
+          </li>
+
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── Legend panel ── -->
+    <div class="legend-panel">
+      <div class="legend-title">Folder guide</div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-assets)"></div>
+          <span class="legend-folder" style="color:var(--c-assets)">assets/</span>
+        </div>
+        <div class="legend-desc">Static media — images, icons, custom fonts.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-components)"></div>
+          <span class="legend-folder" style="color:var(--c-components)">components/</span>
+        </div>
+        <div class="legend-desc">All reusable UI — split into <span style="color:var(--c-common)">common</span>, <span style="color:var(--c-layout)">layout</span>, and <span style="color:var(--c-ui)">ui</span> sub-layers.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-pages)"></div>
+          <span class="legend-folder" style="color:var(--c-pages)">pages/</span>
+        </div>
+        <div class="legend-desc">One file per route. Pages compose components, they don't define them.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-routes)"></div>
+          <span class="legend-folder" style="color:var(--c-routes)">routes/</span>
+        </div>
+        <div class="legend-desc">Routing logic and guards — protected & admin access control.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-services)"></div>
+          <span class="legend-folder" style="color:var(--c-services)">services/</span>
+        </div>
+        <div class="legend-desc">API calls and business logic — never mix these into components.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-hooks)"></div>
+          <span class="legend-folder" style="color:var(--c-hooks)">hooks/</span>
+        </div>
+        <div class="legend-desc">Custom React hooks — reusable stateful logic extracted cleanly.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-context)"></div>
+          <span class="legend-folder" style="color:var(--c-context)">context/</span>
+        </div>
+        <div class="legend-desc">Global state via React Context — auth, theme, user session.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-redux)"></div>
+          <span class="legend-folder" style="color:var(--c-redux); opacity:.7">redux/ <em style="font-size:10px">(opt.)</em></span>
+        </div>
+        <div class="legend-desc">Only add Redux when Context isn't enough. Store, slices, actions.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-utils)"></div>
+          <span class="legend-folder" style="color:var(--c-utils)">utils/</span>
+        </div>
+        <div class="legend-desc">Pure helper functions — no React, no side effects. Fully testable.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-styles)"></div>
+          <span class="legend-folder" style="color:var(--c-styles)">styles/</span>
+        </div>
+        <div class="legend-desc">Global CSS, design tokens, and theme variables.</div>
+      </div>
+
+      <div class="legend-item">
+        <div class="legend-item-top">
+          <div class="legend-dot" style="background:var(--c-config)"></div>
+          <span class="legend-folder" style="color:var(--c-config)">config/</span>
+        </div>
+        <div class="legend-desc">Env handling and Axios base configuration.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Callout -->
+  <div class="callout">
+    <div class="callout-eye">The rule of thumb</div>
+    <div class="callout-quote">"Every file should have <span>one reason to exist</span> and one obvious place to live."</div>
+    <div class="callout-sub">Structure now so you don't refactor painfully at 50 files.</div>
+  </div>
+
+  <footer>VibeShipping with YG</footer>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var rootRows   = document.querySelectorAll('.node-row.is-toggleable:not(.is-nested)');
+  var nestedRows = document.querySelectorAll('.node-row.is-toggleable.is-nested');
+
+  function closeAllRoot() {
+    rootRows.forEach(function(row) {
+      var sub = document.getElementById(row.getAttribute('data-target'));
+      if (sub) sub.classList.remove('is-open');
+      row.classList.remove('is-open');
+      var btn = row.querySelector('.toggle-btn');
+      if (btn) btn.textContent = '+';
+      // also close any nested inside this root
+      nestedRows.forEach(function(nr) {
+        var nsub = document.getElementById(nr.getAttribute('data-target'));
+        if (nsub) nsub.classList.remove('is-open');
+        nr.classList.remove('is-open');
+        var nb = nr.querySelector('.toggle-btn');
+        if (nb) nb.textContent = '+';
+      });
+    });
+  }
+
+  // Root-level: accordion (one open at a time)
+  rootRows.forEach(function(row) {
+    row.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var sub = document.getElementById(row.getAttribute('data-target'));
+      var isOpen = sub && sub.classList.contains('is-open');
+      closeAllRoot();
+      if (!isOpen && sub) {
+        sub.classList.add('is-open');
+        row.classList.add('is-open');
+        var btn = row.querySelector('.toggle-btn');
+        if (btn) btn.textContent = '−';
+      }
+    });
+  });
+
+  // Nested-level: independent toggle (don't affect siblings)
+  nestedRows.forEach(function(row) {
+    row.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var sub = document.getElementById(row.getAttribute('data-target'));
+      if (!sub) return;
+      var isOpen = sub.classList.contains('is-open');
+      sub.classList.toggle('is-open', !isOpen);
+      row.classList.toggle('is-open', !isOpen);
+      var btn = row.querySelector('.toggle-btn');
+      if (btn) btn.textContent = isOpen ? '+' : '−';
+    });
+  });
+});
+</script>
+</body>
+</html>
